@@ -1,0 +1,17 @@
+{
+  "name": "youroptimum-reviews-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Proxy entre el escaparate y la API de reseñas de Klaviyo. Guarda la private key en el servidor.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "franc-min": "^6.2.0"
+  }
+}
