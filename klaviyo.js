@@ -22,6 +22,10 @@ const {
 export const DEFAULT_PRODUCT_MAP = {
   optimum: 'optimum',
   'optimum-men': 'optimum-men',
+  'gummies-focus-on-the-good': 'gummies-focus-on-the-good',
+  'gummies-sweet-energy': 'gummies-sweet-energy',
+  'gummies-glow-up': 'gummies-glow-up',
+  'vitamina-d3-k2': 'vitamina-d3-k2',
 };
 const PRODUCT_MAP = PRODUCT_MAP_ENV ? JSON.parse(PRODUCT_MAP_ENV) : DEFAULT_PRODUCT_MAP;
 
@@ -70,13 +74,37 @@ export function isRenderable(review) {
   return Boolean(review.product_key) && Boolean(review.author) && review.content.length >= MIN_CONTENT_LENGTH;
 }
 
-/** Filtros que sí dependen de la sección (producto, idioma, nota mínima). */
-export function select(reviews, { product, language, minRating = 4, limit = 12 } = {}) {
-  return reviews
-    .filter((review) => !product || review.product_key === product)
+/**
+ * Filtros que sí dependen de la sección (productos, idioma, nota mínima).
+ *
+ * Con varios productos las reseñas se entrelazan equilibradas: una de cada producto por
+ * ronda (A, B, A, B…), cada producto en su orden original (Klaviyo las sirve por fecha
+ * descendente y los filtros lo conservan). Si un producto se agota, las rondas siguen con
+ * los demás. Con un producto o ninguno, el comportamiento es el de siempre.
+ */
+export function select(reviews, { products = [], language, minRating = 4, limit = 12 } = {}) {
+  const base = reviews
     .filter((review) => review.rating >= minRating)
-    .filter((review) => !language || review.language === language)
-    .slice(0, limit);
+    .filter((review) => !language || review.language === language);
+
+  if (products.length === 0) return base.slice(0, limit);
+  if (products.length === 1) {
+    return base.filter((review) => review.product_key === products[0]).slice(0, limit);
+  }
+
+  const groups = products.map((key) => base.filter((review) => review.product_key === key));
+  const mixed = [];
+  for (let round = 0; mixed.length < limit; round++) {
+    let added = false;
+    for (const group of groups) {
+      if (round < group.length && mixed.length < limit) {
+        mixed.push(group[round]);
+        added = true;
+      }
+    }
+    if (!added) break; // no queda reseña en ningún producto
+  }
+  return mixed;
 }
 
 export async function fetchAllReviews() {

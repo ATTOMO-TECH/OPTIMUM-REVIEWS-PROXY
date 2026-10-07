@@ -6,7 +6,8 @@
  * son públicos, así que la key no puede vivir en el tema. Vive aquí (Railway) y al navegador
  * solo le llega JSON ya filtrado.
  *
- *   GET /reviews?product=optimum&language=es&min_rating=4&limit=12
+ *   GET /reviews?products=optimum,optimum-men&language=es&min_rating=4&limit=12
+ *   (`product=` singular sigue funcionando como alias con un solo producto)
  *   GET /health
  */
 
@@ -62,8 +63,13 @@ const server = createServer(async (request, response) => {
   }
 
   try {
+    const requestedProducts = (url.searchParams.get('products') ?? url.searchParams.get('product') ?? '')
+      .split(',')
+      .map((key) => key.trim())
+      .filter(Boolean);
+
     const reviews = select(await getReviews(), {
-      product: url.searchParams.get('product'),
+      products: requestedProducts,
       language: url.searchParams.get('language'),
       minRating: Number(url.searchParams.get('min_rating') ?? 4),
       limit: Math.min(Number(url.searchParams.get('limit') ?? 12), 50),
